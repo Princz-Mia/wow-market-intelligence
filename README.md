@@ -13,6 +13,26 @@ Market intelligence for the World of Warcraft auction house. Hourly auction snap
 5. **Cross-realm opportunities:** which items are consistently cheaper on one realm than another after fees, and which should a trader act on first?
 6. **Trust:** is the data fresh and complete?
 
+## Course alignment
+
+The project is the large homework for the *Business Intelligence* course at BME VIK. The design maps onto the course topics:
+
+| Course topic | Where it appears |
+|---|---|
+| BI, decision support, KPIs | The business questions above, the KPI catalogue, and the opportunity ranking |
+| BI architecture, Kimball vs Inmon | Layered Kimball warehouse with a staging area and subject marts ([ADR 0001](docs/adr/0001-kimball-dimensional-warehouse.md)) |
+| Staging, raw data, incremental load, ETL metadata | Gzipped raw zone, `raw` staging tables, incremental dbt models, run metadata in `ops` |
+| ETL vs ELT | Java extracts and loads, dbt transforms inside PostgreSQL ([ADR 0002](docs/adr/0002-elt-with-dbt.md)) |
+| Dimensional modelling, grain, facts, SCD | Periodic snapshot, accumulating snapshot and aggregate facts; SCD2 market dimension |
+| ETL testing | Unit, integration (WireMock, Testcontainers), end-to-end and performance tests |
+| Data quality | Ingestion batch checks before staging, dbt tests on finished tables |
+| Python data stack | dbt-core managed with uv, `dbt docs` lineage |
+| Event processing | Event time vs processing time ([ADR 0008](docs/adr/0008-event-time-from-last-modified.md)), idempotent loads, robust z-score anomaly flags |
+| NoSQL, data lake | Compressed JSON raw zone instead of a NoSQL store ([ADR 0003](docs/adr/0003-raw-zone-as-compressed-files.md)) |
+| Docker | The whole stack runs with Docker Compose |
+| Power BI | Star schema model, DAX measures, time intelligence, what-if parameters ([ADR 0006](docs/adr/0006-power-bi-import-on-marts.md)) |
+| Visualisation and storytelling | One question per visual, a bookmark-driven story, case studies |
+
 ## Run it
 
 You need Docker with Compose v2 and JDK 25. Copy `.env.example` to `.env` and set the passwords, then start the warehouse:
