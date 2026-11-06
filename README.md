@@ -13,6 +13,24 @@ Market intelligence for the World of Warcraft auction house. Hourly auction snap
 5. **Cross-realm opportunities:** which items are consistently cheaper on one realm than another after fees, and which should a trader act on first?
 6. **Trust:** is the data fresh and complete?
 
+## Run it
+
+You need Docker with Compose v2 and JDK 25. Copy `.env.example` to `.env` and set the passwords, then start the warehouse:
+
+```sh
+docker compose up -d --wait
+```
+
+PostgreSQL listens on `localhost:15432`. The `wow_market` database has one schema per layer: `raw` and `ops` belong to the `collector` role, `staging`, `core` and `marts` to the `transformer` role, and the `bi_reader` role can read only `marts`.
+
+Build and test:
+
+```sh
+./mvnw verify        # unit tests, format check, and *IT tests against PostgreSQL in Testcontainers (needs Docker)
+./mvnw test          # Docker-free unit tests only
+./mvnw spotless:apply
+```
+
 ## Contributing
 
 After cloning, enable the commit message check:
