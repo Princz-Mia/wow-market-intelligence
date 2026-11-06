@@ -1,0 +1,69 @@
+# WoW Market Intelligence: root ignore rules.
+# Commit the Maven Wrapper, uv.lock, dbt package lock, migrations,
+# Compose files, small test fixtures and safe templates.
+
+# Local secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+application-local.properties
+/secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+
+# Java / Maven / JVM diagnostics
+target/
+*.class
+.mvn/timing.properties
+.mvn/.cache/
+hs_err_pid*
+replay_pid*
+*.hprof
+*.jfr
+
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# dbt
+/transform/target/
+/transform/dbt_packages/
+/transform/logs/
+/transform/.user.yml
+
+# Collected data and local runtime state; fixtures under src/test stay tracked
+/data/
+/archive/
+/backups/
+/logs/
+/tmp/
+*.log
+*.dump
+
+# Power BI local caches; the .pbip project files stay tracked
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+*.abf
+*.pbix
+
+# IDE/editor local state
+.idea/
+*.iml
+.vscode/
+*.swp
+*~
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
