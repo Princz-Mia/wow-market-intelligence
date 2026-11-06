@@ -4,6 +4,14 @@ spring:
   threads:
     virtual:
       enabled: true
+  datasource:
+    url: ${COLLECTOR_DB_URL:jdbc:postgresql://localhost:15432/wow_market}
+    username: ${COLLECTOR_DB_USER:collector}
+    password: ${COLLECTOR_DB_PASSWORD}
+  flyway:
+    # raw and ops already exist, owned by the collector; the history table lives in ops.
+    default-schema: ops
+    create-schemas: false
 
 management:
   endpoints:
