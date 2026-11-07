@@ -4,13 +4,26 @@ How to run, check and maintain the collector on an always-on Linux host (here an
 
 ## First deployment
 
-On the host, with Docker and the Compose plugin installed:
+On Ubuntu, install Docker with the Compose and Buildx plugins (the image build needs BuildKit), then log in again so the group change applies:
+
+```bash
+sudo apt update && sudo apt install -y docker.io docker-compose-v2 docker-buildx git
+sudo usermod -aG docker "$USER"
+```
+
+Then clone the repository and fill in `.env`:
 
 ```bash
 git clone https://github.com/Princz-Mia/wow-market-intelligence.git
 cd wow-market-intelligence
 cp .env.example .env
 nano .env        # Battle.net client id and secret, and a long random password for each database role
+chmod 600 .env
+```
+
+`openssl rand -hex 24` prints a suitable password. Start the stack:
+
+```bash
 docker compose up -d --build --wait
 ```
 
