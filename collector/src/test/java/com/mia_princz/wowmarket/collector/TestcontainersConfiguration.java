@@ -9,15 +9,15 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
     // Digest matches compose.yaml (postgres:18.6).
-    static final String POSTGRES_IMAGE =
+    public static final String POSTGRES_IMAGE =
             "postgres@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81";
 
-    static final String COLLECTOR_PASSWORD = "test-collector";
-    static final String TRANSFORMER_PASSWORD = "test-transformer";
-    static final String BI_READER_PASSWORD = "test-bi-reader";
+    public static final String COLLECTOR_PASSWORD = "test-collector";
+    public static final String TRANSFORMER_PASSWORD = "test-transformer";
+    public static final String BI_READER_PASSWORD = "test-bi-reader";
 
     /** Starts from the same init script as Compose, so tests exercise the real roles and grants. */
     @Bean
@@ -42,7 +42,7 @@ class TestcontainersConfiguration {
         };
     }
 
-    static String warehouseUrl(PostgreSQLContainer postgres) {
+    public static String warehouseUrl(PostgreSQLContainer postgres) {
         return "jdbc:postgresql://" + postgres.getHost() + ":" + postgres.getMappedPort(5432) + "/wow_market";
     }
 }
