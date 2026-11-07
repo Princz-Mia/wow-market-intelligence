@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -61,6 +62,19 @@ public class FileSystemRawArchive implements RawArchivePort {
             throw new UncheckedIOException("could not archive " + location, e);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("every JDK provides SHA-256", e);
+        }
+    }
+
+    @Override
+    public InputStream open(String location) {
+        Path file = root.resolve(location).normalize();
+        if (!file.startsWith(root.normalize())) {
+            throw new IllegalArgumentException("location outside the archive: " + location);
+        }
+        try {
+            return new GZIPInputStream(Files.newInputStream(file), 64 * 1024);
+        } catch (IOException e) {
+            throw new UncheckedIOException("could not open " + location, e);
         }
     }
 
