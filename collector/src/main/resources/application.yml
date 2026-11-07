@@ -39,6 +39,9 @@ collector:
     concurrency: 4
   archive:
     root: ${COLLECTOR_ARCHIVE_ROOT:data/archive}
+  load:
+    # A snapshot loads in a second or two; 100 per run clears a day of backlog in a few runs.
+    batch-size: 100
   blizzard:
     client-id: ${BLIZZARD_CLIENT_ID:}
     client-secret: ${BLIZZARD_CLIENT_SECRET:}

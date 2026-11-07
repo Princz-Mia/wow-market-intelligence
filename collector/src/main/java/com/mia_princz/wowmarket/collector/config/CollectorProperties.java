@@ -24,6 +24,7 @@ public record CollectorProperties(
         @NotEmpty List<@NotNull @Positive Integer> connectedRealms,
         @Valid @NotNull Capture capture,
         @Valid @NotNull Archive archive,
+        @Valid @NotNull Load load,
         @Valid @NotNull Blizzard blizzard) {
 
     public CollectorProperties {
@@ -44,6 +45,9 @@ public record CollectorProperties(
 
     /** Root folder of the raw zone, where every snapshot is kept as received. */
     public record Archive(@NotNull Path root) {}
+
+    /** How many archived snapshots one load step takes on, so a backlog is worked off over several runs. */
+    public record Load(@Min(1) @Max(1000) int batchSize) {}
 
     /** Battle.net API client and the limits we keep below the Blizzard quota. */
     public record Blizzard(

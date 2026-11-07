@@ -8,13 +8,17 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
+import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
 import com.mia_princz.wowmarket.collector.domain.pipeline.CaptureSummary;
+import com.mia_princz.wowmarket.collector.domain.pipeline.LoadSummary;
 import com.mia_princz.wowmarket.collector.domain.pipeline.RunStatus;
 import com.mia_princz.wowmarket.collector.domain.pipeline.RunTrigger;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +33,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-/** A capture against a fake Blizzard API, writing to a real archive folder and PostgreSQL. */
+/** Capture and load against a fake Blizzard API, writing to a real archive folder and PostgreSQL. */
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(properties = {"collector.connected-realms=1403,1080", "collector.blizzard.max-attempts=1"})
 class CaptureIT {
@@ -55,10 +59,13 @@ class CaptureIT {
     CaptureSnapshotsUseCase capture;
 
     @Autowired
+    LoadSnapshotsUseCase load;
+
+    @Autowired
     JdbcClient jdbc;
 
     @Test
-    void capturesNewSnapshotsOnceAndThenSeesThemUnchanged() throws IOException {
+    void capturesAndLoadsNewSnapshotsOnceThenSeesThemUnchanged() throws IOException {
         blizzard.stubFor(
                 post("/token").willReturn(aResponse().withBody("{\"access_token\":\"tok\",\"expires_in\":86399}")));
         blizzard.stubFor(get(urlPathMatching("/data/wow/.*"))
@@ -74,6 +81,10 @@ class CaptureIT {
         blizzard.stubFor(get("/data/wow/connected-realm/1080/auctions")
                 .atPriority(0)
                 .willReturn(aResponse().withStatus(503)));
+        blizzard.stubFor(get("/data/wow/auctions/commodities").atPriority(2).willReturn(fixture("commodities.json")));
+        blizzard.stubFor(get("/data/wow/connected-realm/1403/auctions")
+                .atPriority(2)
+                .willReturn(fixture("connected-realm-1403.json")));
 
         CaptureSummary first = capture.capture(RunTrigger.MANUAL);
 
@@ -84,6 +95,24 @@ class CaptureIT {
                 .isTrue();
         assertThat(Files.exists(archiveRoot.resolve("eu/connected-realm-1403/2026/11/07/17/20261107T172154Z.json.gz")))
                 .isTrue();
+
+        LoadSummary loaded = load.loadPending();
+
+        assertThat(loaded).isEqualTo(new LoadSummary(2, 0, 0, 6));
+        assertThat(jdbc.sql("SELECT count(*) FROM raw.auction_listing")
+                        .query(Long.class)
+                        .single())
+                .isEqualTo(6);
+        assertThat(jdbc.sql(
+                                "SELECT source || ':' || status || ':' || listings_staged FROM ops.snapshot ORDER BY source")
+                        .query(String.class)
+                        .list())
+                .containsExactly("commodities:LOADED:3", "connected-realm-1403:LOADED:3");
+        assertThat(jdbc.sql("SELECT count(*) FROM ops.validation_result WHERE outcome = 'PASSED'")
+                        .query(Long.class)
+                        .single())
+                .isEqualTo(16);
+        assertThat(load.loadPending()).isEqualTo(new LoadSummary(0, 0, 0, 0));
 
         CaptureSummary second = capture.capture(RunTrigger.MANUAL);
 
@@ -97,6 +126,15 @@ class CaptureIT {
                         .query(String.class)
                         .single())
                 .isEqualTo("PARTIAL,PARTIAL");
+    }
+
+    private static ResponseDefinitionBuilder fixture(String name) throws IOException {
+        try (InputStream json = CaptureIT.class.getResourceAsStream("/fixtures/" + name)) {
+            return aResponse()
+                    .withHeader("Last-Modified", LAST_MODIFIED)
+                    .withHeader("Content-Encoding", "gzip")
+                    .withBody(gzip(new String(json.readAllBytes(), StandardCharsets.UTF_8)));
+        }
     }
 
     private static byte[] gzip(String text) throws IOException {
