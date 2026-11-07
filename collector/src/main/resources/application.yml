@@ -18,3 +18,34 @@ management:
     web:
       exposure:
         include: health,info
+
+collector:
+  region: eu
+  # Connected realms captured besides the region-wide commodity market.
+  # Ids come from /data/wow/connected-realm/index.
+  connected-realms:
+    - 1403 # Draenor (enGB, full)
+    - 1305 # Kazzak (enGB, full)
+    - 3391 # Silvermoon (enGB, full)
+    - 1084 # Tarren Mill, Dentarg (enGB, full)
+    - 580 # Blackmoore, Tichondrius, Lordaeron (deDE, full)
+    - 1390 # Hyjal (frFR, full)
+    - 1379 # Zul'jin, Uldum, Sanguino, Shen'dralar (esES, high)
+    - 1080 # Khadgar, Bloodhoof (enGB, low)
+  capture:
+    enabled: ${COLLECTOR_CAPTURE_ENABLED:true}
+    # Snapshots refresh about hourly; two attempts an hour survive one failed or late fetch.
+    cron: "0 10,40 * * * *"
+    concurrency: 4
+  archive:
+    root: ${COLLECTOR_ARCHIVE_ROOT:data/archive}
+  blizzard:
+    client-id: ${BLIZZARD_CLIENT_ID:}
+    client-secret: ${BLIZZARD_CLIENT_SECRET:}
+    token-url: https://oauth.battle.net/token
+    api-url: https://eu.api.blizzard.com
+    # Blizzard allows 100 per second; staying at half leaves room for bursts.
+    requests-per-second: 50
+    connect-timeout: 10s
+    request-timeout: 2m
+    max-attempts: 4
