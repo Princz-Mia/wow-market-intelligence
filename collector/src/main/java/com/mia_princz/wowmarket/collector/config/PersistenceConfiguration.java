@@ -2,14 +2,18 @@ package com.mia_princz.wowmarket.collector.config;
 
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.CopyStagingWriter;
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcPipelineRunRepository;
+import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcSnapshotLoadRegistry;
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcSnapshotRegistry;
 import com.mia_princz.wowmarket.collector.application.port.out.PipelineRunRepositoryPort;
+import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.StagingWriterPort;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration(proxyBeanMethods = false)
 class PersistenceConfiguration {
@@ -22,6 +26,11 @@ class PersistenceConfiguration {
     @Bean
     PipelineRunRepositoryPort pipelineRunRepository(JdbcClient jdbc) {
         return new JdbcPipelineRunRepository(jdbc);
+    }
+
+    @Bean
+    SnapshotLoadRegistryPort snapshotLoadRegistry(JdbcClient jdbc, PlatformTransactionManager transactions) {
+        return new JdbcSnapshotLoadRegistry(jdbc, new TransactionTemplate(transactions));
     }
 
     @Bean

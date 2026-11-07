@@ -46,7 +46,8 @@ class OpsRepositoriesIT {
 
     @BeforeEach
     void emptyTables() {
-        jdbc.sql("TRUNCATE ops.snapshot, ops.pipeline_run RESTART IDENTITY").update();
+        jdbc.sql("TRUNCATE ops.validation_result, ops.snapshot, ops.pipeline_run RESTART IDENTITY")
+                .update();
     }
 
     private NewSnapshot snapshot(AuctionSource source, Instant lastModified, long runId) {
