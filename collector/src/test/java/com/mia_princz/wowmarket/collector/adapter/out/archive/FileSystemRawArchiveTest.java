@@ -3,6 +3,7 @@ package com.mia_princz.wowmarket.collector.adapter.out.archive;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort;
 import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort.ArchivedSnapshot;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import java.io.ByteArrayInputStream;
@@ -97,6 +98,15 @@ class FileSystemRawArchiveTest {
         try (InputStream json = archive.open(stored.location())) {
             assertThat(new String(json.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(JSON);
         }
+    }
+
+    @Test
+    void reportsAMissingFileAsSuch() {
+        var archive = new FileSystemRawArchive(root);
+
+        assertThatThrownBy(() -> archive.open("eu/commodities/2026/11/07/17/20261107T172154Z.json.gz"))
+                .isInstanceOf(RawArchivePort.MissingSnapshotFileException.class)
+                .hasMessage("archive file missing: eu/commodities/2026/11/07/17/20261107T172154Z.json.gz");
     }
 
     @Test

@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.DigestOutputStream;
@@ -73,6 +74,8 @@ public class FileSystemRawArchive implements RawArchivePort {
         }
         try {
             return new GZIPInputStream(Files.newInputStream(file), 64 * 1024);
+        } catch (NoSuchFileException e) {
+            throw new MissingSnapshotFileException(location, e);
         } catch (IOException e) {
             throw new UncheckedIOException("could not open " + location, e);
         }
