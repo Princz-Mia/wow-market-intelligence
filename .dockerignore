@@ -1,0 +1,7 @@
+# Allowlist: images see only what their Dockerfile copies.
+*
+!mvnw
+!pom.xml
+!.mvn/
+!collector/pom.xml
+!collector/src/
