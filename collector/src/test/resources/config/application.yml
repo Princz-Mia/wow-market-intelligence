@@ -1,0 +1,9 @@
+# Loaded on top of the main application.yml in every test context.
+collector:
+  capture:
+    enabled: false
+  archive:
+    root: target/test-archive
+  blizzard:
+    client-id: test-client
+    client-secret: test-secret
