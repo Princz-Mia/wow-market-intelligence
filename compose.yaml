@@ -1,6 +1,13 @@
-# Local warehouse. Copy .env.example to .env and set the passwords first.
-# Every published port binds to localhost.
+# Warehouse and collector. Copy .env.example to .env and fill it in first.
+# Every published port binds to localhost; the collector publishes none.
 name: wow-market-intelligence
+
+x-logging: &logging
+  # Bounded logs: the stack runs unattended for weeks on a small VM.
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
 
 services:
   postgres:
@@ -26,6 +33,28 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+    logging: *logging
+
+  collector:
+    build:
+      context: .
+      dockerfile: collector/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      COLLECTOR_DB_URL: jdbc:postgresql://postgres:5432/wow_market
+      COLLECTOR_DB_PASSWORD: ${COLLECTOR_DB_PASSWORD:?set it in .env}
+      BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:?set it in .env}
+      BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:?set it in .env}
+      # Set to false to run the stack without collecting, e.g. on a laptop next to the always-on host.
+      COLLECTOR_CAPTURE_ENABLED: ${COLLECTOR_CAPTURE_ENABLED:-true}
+    volumes:
+      - archive-data:/data/archive
+    mem_limit: 1g
+    logging: *logging
 
 volumes:
   postgres-data:
+  archive-data:
