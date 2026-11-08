@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,6 +75,11 @@ class CaptureSnapshotsServiceTest {
         @Override
         public InputStream open(String location) {
             throw new UnsupportedOperationException("capture never reads the archive");
+        }
+
+        @Override
+        public int deleteDaysBefore(String region, LocalDate firstKeptDay) {
+            throw new UnsupportedOperationException("capture never deletes");
         }
     };
 
