@@ -1,0 +1,64 @@
+{
+  "_links": {
+    "self": {
+      "href": "offline fixture"
+    }
+  },
+  "connected_realm": {
+    "href": "offline fixture 1403"
+  },
+  "auctions": [
+    {
+      "id": 9100001,
+      "item": {
+        "id": 19019,
+        "context": 13,
+        "bonus_lists": [
+          6646,
+          1472
+        ],
+        "modifiers": [
+          {
+            "type": 9,
+            "value": 70
+          }
+        ]
+      },
+      "buyout": 45000000000,
+      "quantity": 1,
+      "time_left": "VERY_LONG"
+    },
+    {
+      "id": 9100002,
+      "item": {
+        "id": 82800,
+        "pet_breed_id": 5,
+        "pet_level": 25,
+        "pet_quality_id": 3,
+        "pet_species_id": 1155
+      },
+      "bid": 15000000,
+      "buyout": 20000000,
+      "quantity": 1,
+      "time_left": "LONG"
+    },
+    {
+      "id": 9100003,
+      "item": {
+        "id": 2589
+      },
+      "bid": 120,
+      "quantity": 20,
+      "time_left": "SHORT"
+    },
+    {
+      "id": 9100004,
+      "item": {
+        "id": 2770
+      },
+      "buyout": 900000,
+      "quantity": 1,
+      "time_left": "LONG"
+    }
+  ]
+}
