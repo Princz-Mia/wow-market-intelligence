@@ -63,6 +63,16 @@ docker compose exec collector curl -s -X POST localhost:8080/api/runs          #
 
 A run answers 409 while another one is still going.
 
+## Replay from the archive
+
+After a fix to a check or to the parser, staging can be rebuilt from the archived files. This checks and loads every snapshot from the given time onward again, replacing what was staged for it:
+
+```bash
+docker compose exec collector curl -s -X POST "localhost:8080/api/replay?from=2026-11-08T00:00:00Z"
+```
+
+`from` must lie within the days staging keeps (3 full days besides today); older rows would be dropped again by retention at the end of the next run. Snapshots whose archive file is gone are quarantined under DQ-I01.
+
 Disk usage: the archive grows by about 250 MB a day and staged listings by about 1.9 GB a day. Retention keeps 3 full days of staged listings and 30 of archive besides today, so disk use levels off after a month:
 
 ```bash

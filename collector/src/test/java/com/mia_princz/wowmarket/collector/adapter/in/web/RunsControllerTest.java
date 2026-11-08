@@ -7,12 +7,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.mia_princz.wowmarket.collector.application.port.in.PipelineStatusUseCase;
+import com.mia_princz.wowmarket.collector.application.port.in.ReplayArchiveUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.RunPipelineUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.RunPipelineUseCase.PipelineAlreadyRunningException;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import com.mia_princz.wowmarket.collector.domain.pipeline.CaptureSummary;
 import com.mia_princz.wowmarket.collector.domain.pipeline.LoadSummary;
 import com.mia_princz.wowmarket.collector.domain.pipeline.PipelineSummary;
+import com.mia_princz.wowmarket.collector.domain.pipeline.ReplaySummary;
 import com.mia_princz.wowmarket.collector.domain.pipeline.RetentionSummary;
 import com.mia_princz.wowmarket.collector.domain.pipeline.RunTrigger;
 import java.time.Instant;
@@ -65,8 +67,16 @@ class RunsControllerTest {
         }
     };
 
+    private final ReplayArchiveUseCase replay = from -> {
+        if (from.isBefore(Instant.parse("2026-11-05T00:00:00Z"))) {
+            throw new IllegalArgumentException("staging keeps days from 2026-11-05");
+        }
+        asked.add("replay " + from);
+        return new ReplaySummary(18, new LoadSummary(18, 0, 0, 1_300_000));
+    };
+
     private MockMvc mvc() {
-        return MockMvcBuilders.standaloneSetup(new RunsController(pipeline, status))
+        return MockMvcBuilders.standaloneSetup(new RunsController(pipeline, status, replay))
                 .build();
     }
 
@@ -111,6 +121,23 @@ class RunsControllerTest {
         mvc().perform(get("/api/snapshots")).andExpect(status().isOk());
 
         assertThat(asked).containsExactly("snapshots connected-realm-1403 5", "snapshots all 20");
+    }
+
+    @Test
+    void replaysFromTheGivenInstant() throws Exception {
+        mvc().perform(post("/api/replay?from=2026-11-08T07:00:00Z"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requeued").value(18))
+                .andExpect(jsonPath("$.load.loaded").value(18));
+
+        assertThat(asked).containsExactly("replay 2026-11-08T07:00:00Z");
+    }
+
+    @Test
+    void refusesAReplayBeyondStagingOrWithoutAValidInstant() throws Exception {
+        mvc().perform(post("/api/replay?from=2026-10-01T00:00:00Z")).andExpect(status().isBadRequest());
+        mvc().perform(post("/api/replay?from=yesterday")).andExpect(status().isBadRequest());
+        mvc().perform(post("/api/replay")).andExpect(status().isBadRequest());
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.mia_princz.wowmarket.collector.adapter.in.scheduling.CaptureScheduler
 import com.mia_princz.wowmarket.collector.application.port.in.ApplyRetentionUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
+import com.mia_princz.wowmarket.collector.application.port.in.ReplayArchiveUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.RunPipelineUseCase;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionSourcePort;
@@ -11,12 +12,14 @@ import com.mia_princz.wowmarket.collector.application.port.out.PipelineRunReposi
 import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort;
+import com.mia_princz.wowmarket.collector.application.port.out.SnapshotReplayPort;
 import com.mia_princz.wowmarket.collector.application.port.out.StagingRetentionPort;
 import com.mia_princz.wowmarket.collector.application.port.out.StagingWriterPort;
 import com.mia_princz.wowmarket.collector.application.service.ApplyRetentionService;
 import com.mia_princz.wowmarket.collector.application.service.CaptureSnapshotsService;
 import com.mia_princz.wowmarket.collector.application.service.LoadSnapshotsService;
 import com.mia_princz.wowmarket.collector.application.service.PipelineLock;
+import com.mia_princz.wowmarket.collector.application.service.ReplayArchiveService;
 import com.mia_princz.wowmarket.collector.application.service.RunPipelineService;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import java.time.Clock;
@@ -94,6 +97,17 @@ class CaptureConfiguration {
             ApplyRetentionUseCase retention,
             PipelineLock lock) {
         return new RunPipelineService(capture, load, retention, lock);
+    }
+
+    @Bean
+    ReplayArchiveUseCase replayArchive(
+            CollectorProperties properties,
+            SnapshotReplayPort replay,
+            LoadSnapshotsUseCase load,
+            PipelineLock lock,
+            Clock clock) {
+        return new ReplayArchiveService(
+                properties.region(), properties.retention().stagedDays(), replay, load, lock, clock);
     }
 
     @Bean
