@@ -2,11 +2,16 @@ package com.mia_princz.wowmarket.collector.config;
 
 import com.mia_princz.wowmarket.collector.adapter.in.scheduling.CaptureScheduler;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
+import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
+import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionSourcePort;
 import com.mia_princz.wowmarket.collector.application.port.out.PipelineRunRepositoryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort;
+import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort;
+import com.mia_princz.wowmarket.collector.application.port.out.StagingWriterPort;
 import com.mia_princz.wowmarket.collector.application.service.CaptureSnapshotsService;
+import com.mia_princz.wowmarket.collector.application.service.LoadSnapshotsService;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -48,8 +53,20 @@ class CaptureConfiguration {
     }
 
     @Bean
+    LoadSnapshotsUseCase loadSnapshots(
+            CollectorProperties properties,
+            RawArchivePort archive,
+            AuctionPayloadParserPort parser,
+            StagingWriterPort staging,
+            SnapshotLoadRegistryPort registry,
+            Clock clock) {
+        return new LoadSnapshotsService(
+                properties.region(), properties.load().batchSize(), archive, parser, staging, registry, clock);
+    }
+
+    @Bean
     @ConditionalOnProperty(name = "collector.capture.enabled", havingValue = "true")
-    CaptureScheduler captureScheduler(CaptureSnapshotsUseCase capture) {
-        return new CaptureScheduler(capture);
+    CaptureScheduler captureScheduler(CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load) {
+        return new CaptureScheduler(capture, load);
     }
 }

@@ -21,6 +21,7 @@ class CollectorPropertiesTest {
                     "collector.capture.cron=0 10,40 * * * *",
                     "collector.capture.concurrency=4",
                     "collector.archive.root=data/archive",
+                    "collector.load.batch-size=100",
                     "collector.blizzard.client-id=id",
                     "collector.blizzard.client-secret=very-secret",
                     "collector.blizzard.token-url=https://oauth.battle.net/token",
@@ -36,6 +37,7 @@ class CollectorPropertiesTest {
             CollectorProperties properties = app.getBean(CollectorProperties.class);
             assertThat(properties.connectedRealms()).containsExactly(1403, 1080);
             assertThat(properties.archive().root()).isEqualTo(Path.of("data/archive"));
+            assertThat(properties.load().batchSize()).isEqualTo(100);
             assertThat(properties.blizzard().requestTimeout()).isEqualTo(Duration.ofMinutes(2));
         });
     }

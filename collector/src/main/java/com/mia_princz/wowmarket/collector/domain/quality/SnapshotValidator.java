@@ -85,6 +85,19 @@ public final class SnapshotValidator {
         return keep;
     }
 
+    public long listingsRead() {
+        return listingsRead;
+    }
+
+    public long listingsKept() {
+        return listingsKept;
+    }
+
+    /** Distinct item ids among the kept listings. */
+    public int distinctItems() {
+        return itemIds.size();
+    }
+
     /** The verdict of every check, starting with the payload having been readable. */
     public List<ValidationResult> finish() {
         BatchFacts facts = new BatchFacts(
