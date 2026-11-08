@@ -4,6 +4,7 @@ import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCa
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort.MalformedPayloadException;
 import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort;
+import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort.MissingSnapshotFileException;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort.LoadRecord;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort.PendingSnapshot;
@@ -129,7 +130,8 @@ public class LoadSnapshotsService implements LoadSnapshotsUseCase {
             if (!SnapshotValidator.isBlocking(results)) {
                 staged = batch.commit();
             }
-        } catch (MalformedPayloadException e) {
+        } catch (MalformedPayloadException | MissingSnapshotFileException e) {
+            // Neither gets better by retrying; quarantine it so later snapshots of the source can load.
             results = SnapshotValidator.unreadable(e.getMessage());
         } catch (IOException e) {
             throw new UncheckedIOException("could not close " + snapshot.archiveLocation(), e);

@@ -20,8 +20,16 @@ public interface RawArchivePort {
      * Opens a stored snapshot for reading, already decompressed. The caller closes the stream.
      *
      * @param location as returned by {@link #store}
+     * @throws MissingSnapshotFileException if nothing is stored at {@code location}
      */
     InputStream open(String location);
+
+    /** The registry knows a snapshot whose file is not in the archive; retrying will not bring it back. */
+    final class MissingSnapshotFileException extends RuntimeException {
+        public MissingSnapshotFileException(String location, Throwable cause) {
+            super("archive file missing: " + location, cause);
+        }
+    }
 
     /**
      * Where a snapshot was stored.

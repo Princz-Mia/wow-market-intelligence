@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort.MalformedPayloadException;
 import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort;
+import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort.MissingSnapshotFileException;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort.LoadRecord;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort.PendingSnapshot;
@@ -38,7 +39,7 @@ class LoadSnapshotsServiceTest {
     private static final Instant T1 = Instant.parse("2026-11-07T19:21:53Z");
     private static final Instant T2 = Instant.parse("2026-11-07T20:21:53Z");
 
-    /** Listings each archive location holds; a location missing here cannot be opened. */
+    /** Listings each archive location holds; a location missing here is missing from the archive. */
     private final Map<String, List<AuctionListing>> archived = new HashMap<>();
 
     private final List<PendingSnapshot> pending = new ArrayList<>();
@@ -54,8 +55,11 @@ class LoadSnapshotsServiceTest {
 
         @Override
         public InputStream open(String location) {
+            if (location.startsWith("unreachable")) {
+                throw new UncheckedIOException(new IOException("input/output error"));
+            }
             if (!archived.containsKey(location)) {
-                throw new UncheckedIOException(new IOException("no such file: " + location));
+                throw new MissingSnapshotFileException(location, null);
             }
             return new ByteArrayInputStream(location.getBytes(StandardCharsets.UTF_8));
         }
@@ -190,7 +194,7 @@ class LoadSnapshotsServiceTest {
     void holdsBackASourceAfterAFailureAndCarriesOnWithTheOthers() {
         archived.put("c1", List.of(ore(1, 200)));
         archived.put("d2", List.of(new AuctionListing(9L, ListedItem.commodity(2589), 1, null, null, 120L, "SHORT")));
-        waiting(21, DRAENOR, T1, "missing");
+        waiting(21, DRAENOR, T1, "unreachable");
         waiting(11, COMMODITIES, T2, "c1");
         waiting(22, DRAENOR, T2, "d2");
 
@@ -198,5 +202,18 @@ class LoadSnapshotsServiceTest {
 
         assertThat(summary).isEqualTo(new LoadSummary(1, 0, 1, 1));
         assertThat(recorded).extracting(LoadRecord::snapshotId).containsExactly(11L);
+    }
+
+    @Test
+    void quarantinesASnapshotWhoseFileIsGoneSoTheSourceKeepsLoading() {
+        archived.put("d2", List.of(new AuctionListing(9L, ListedItem.commodity(2589), 1, null, null, 120L, "SHORT")));
+        waiting(21, DRAENOR, T1, "gone");
+        waiting(22, DRAENOR, T2, "d2");
+
+        LoadSummary summary = service.loadPending();
+
+        assertThat(summary).isEqualTo(new LoadSummary(1, 1, 0, 1));
+        assertThat(recorded.getFirst().results())
+                .containsExactly(new ValidationResult.Failed("DQ-I01", "archive file missing: gone"));
     }
 }
