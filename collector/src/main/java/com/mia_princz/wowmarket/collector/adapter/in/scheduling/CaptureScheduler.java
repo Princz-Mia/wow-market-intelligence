@@ -1,11 +1,7 @@
 package com.mia_princz.wowmarket.collector.adapter.in.scheduling;
 
-import com.mia_princz.wowmarket.collector.application.port.in.ApplyRetentionUseCase;
-import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
-import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase.CaptureAlreadyRunningException;
-import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
-import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase.LoadAlreadyRunningException;
-import com.mia_princz.wowmarket.collector.domain.pipeline.LoadSummary;
+import com.mia_princz.wowmarket.collector.application.port.in.RunPipelineUseCase;
+import com.mia_princz.wowmarket.collector.application.port.in.RunPipelineUseCase.PipelineAlreadyRunningException;
 import com.mia_princz.wowmarket.collector.domain.pipeline.RunTrigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,23 +10,17 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 
 /**
- * Starts a run on the configured cron, and once right after startup, so a restart or redeploy does not wait up to half
- * an hour for the next snapshot. A run captures first, then loads whatever waits in the archive, then removes what has
- * aged out: capturing is what cannot be repeated later, so a slow or failing later step never delays it.
+ * Starts a pipeline run on the configured cron, and once right after startup, so a restart or redeploy does not wait
+ * up to half an hour for the next snapshot.
  */
 public class CaptureScheduler {
 
     private static final Logger LOG = LoggerFactory.getLogger(CaptureScheduler.class);
 
-    private final CaptureSnapshotsUseCase capture;
-    private final LoadSnapshotsUseCase load;
-    private final ApplyRetentionUseCase retention;
+    private final RunPipelineUseCase pipeline;
 
-    public CaptureScheduler(
-            CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load, ApplyRetentionUseCase retention) {
-        this.capture = capture;
-        this.load = load;
-        this.retention = retention;
+    public CaptureScheduler(RunPipelineUseCase pipeline) {
+        this.pipeline = pipeline;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -45,30 +35,12 @@ public class CaptureScheduler {
 
     private void run() {
         try {
-            capture.capture(RunTrigger.SCHEDULE);
-        } catch (CaptureAlreadyRunningException e) {
-            LOG.warn("capture skipped: the previous one is still running");
+            pipeline.run(RunTrigger.SCHEDULE);
+        } catch (PipelineAlreadyRunningException e) {
+            LOG.warn("run skipped: the previous one is still going");
         } catch (RuntimeException e) {
-            // A failed run is recorded by the service; the schedule must survive it.
-            LOG.error("capture failed", e);
-        }
-        try {
-            LoadSummary summary = load.loadPending();
-            LOG.info(
-                    "load loaded={} quarantined={} failed={} staged={}",
-                    summary.loaded(),
-                    summary.quarantined(),
-                    summary.failed(),
-                    summary.listingsStaged());
-        } catch (LoadAlreadyRunningException e) {
-            LOG.warn("load skipped: the previous one is still running");
-        } catch (RuntimeException e) {
-            LOG.error("load failed", e);
-        }
-        try {
-            retention.apply();
-        } catch (RuntimeException e) {
-            LOG.error("retention failed", e);
+            // Each step reports its own failure; the schedule must survive anything else too.
+            LOG.error("run failed", e);
         }
     }
 }

@@ -4,6 +4,7 @@ import com.mia_princz.wowmarket.collector.adapter.in.scheduling.CaptureScheduler
 import com.mia_princz.wowmarket.collector.application.port.in.ApplyRetentionUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
+import com.mia_princz.wowmarket.collector.application.port.in.RunPipelineUseCase;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionSourcePort;
 import com.mia_princz.wowmarket.collector.application.port.out.PipelineRunRepositoryPort;
@@ -15,6 +16,7 @@ import com.mia_princz.wowmarket.collector.application.port.out.StagingWriterPort
 import com.mia_princz.wowmarket.collector.application.service.ApplyRetentionService;
 import com.mia_princz.wowmarket.collector.application.service.CaptureSnapshotsService;
 import com.mia_princz.wowmarket.collector.application.service.LoadSnapshotsService;
+import com.mia_princz.wowmarket.collector.application.service.RunPipelineService;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -80,9 +82,14 @@ class CaptureConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "collector.capture.enabled", havingValue = "true")
-    CaptureScheduler captureScheduler(
+    RunPipelineUseCase runPipeline(
             CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load, ApplyRetentionUseCase retention) {
-        return new CaptureScheduler(capture, load, retention);
+        return new RunPipelineService(capture, load, retention);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "collector.capture.enabled", havingValue = "true")
+    CaptureScheduler captureScheduler(RunPipelineUseCase pipeline) {
+        return new CaptureScheduler(pipeline);
     }
 }
