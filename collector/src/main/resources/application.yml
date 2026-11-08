@@ -18,6 +18,10 @@ management:
     web:
       exposure:
         include: health,info
+  endpoint:
+    health:
+      # The port is not published, so details are visible only from the host.
+      show-details: always
 
 collector:
   region: eu
@@ -37,6 +41,8 @@ collector:
     # Snapshots refresh about hourly; two attempts an hour survive one failed or late fetch.
     cron: "0 10,40 * * * *"
     concurrency: 4
+    # Runs are due every 30 minutes; the health check reports down after four missed in a row.
+    max-run-age: 2h
   archive:
     root: ${COLLECTOR_ARCHIVE_ROOT:data/archive}
   retention:
