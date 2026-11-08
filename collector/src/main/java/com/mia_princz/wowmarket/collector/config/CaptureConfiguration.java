@@ -16,6 +16,7 @@ import com.mia_princz.wowmarket.collector.application.port.out.StagingWriterPort
 import com.mia_princz.wowmarket.collector.application.service.ApplyRetentionService;
 import com.mia_princz.wowmarket.collector.application.service.CaptureSnapshotsService;
 import com.mia_princz.wowmarket.collector.application.service.LoadSnapshotsService;
+import com.mia_princz.wowmarket.collector.application.service.PipelineLock;
 import com.mia_princz.wowmarket.collector.application.service.RunPipelineService;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import java.time.Clock;
@@ -82,9 +83,17 @@ class CaptureConfiguration {
     }
 
     @Bean
+    PipelineLock pipelineLock() {
+        return new PipelineLock();
+    }
+
+    @Bean
     RunPipelineUseCase runPipeline(
-            CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load, ApplyRetentionUseCase retention) {
-        return new RunPipelineService(capture, load, retention);
+            CaptureSnapshotsUseCase capture,
+            LoadSnapshotsUseCase load,
+            ApplyRetentionUseCase retention,
+            PipelineLock lock) {
+        return new RunPipelineService(capture, load, retention, lock);
     }
 
     @Bean
