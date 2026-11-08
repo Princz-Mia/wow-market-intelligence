@@ -10,6 +10,7 @@ import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegis
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort.PendingSnapshot;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort.NewSnapshot;
+import com.mia_princz.wowmarket.collector.application.port.out.SnapshotReplayPort;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import com.mia_princz.wowmarket.collector.domain.pipeline.RunTrigger;
 import com.mia_princz.wowmarket.collector.domain.quality.ValidationContext.History;
@@ -37,6 +38,9 @@ class SnapshotLoadRegistryIT {
 
     @Autowired
     SnapshotLoadRegistryPort loads;
+
+    @Autowired
+    SnapshotReplayPort replays;
 
     @Autowired
     PipelineRunRepositoryPort runs;
@@ -117,6 +121,33 @@ class SnapshotLoadRegistryIT {
 
         assertThat(loads.history("eu", DRAENOR, now)).isEqualTo(new History(3, 200, 20));
         assertThat(loads.history("eu", COMMODITIES, now)).isEqualTo(History.NONE);
+    }
+
+    @Test
+    void requeuesProcessedSnapshotsFromAPointInTime() {
+        long before = archive(DRAENOR, T0.minusSeconds(3600));
+        long loaded = archive(DRAENOR, T0);
+        long quarantined = archive(COMMODITIES, T0.plusSeconds(3600));
+        long waiting = archive(DRAENOR, T0.plusSeconds(7200));
+        record(before, true, 10, 5);
+        record(loaded, true, 10, 5, new ValidationResult.Passed("DQ-I06", "no duplicate auction ids"));
+        record(quarantined, false, 10, 5, new ValidationResult.Failed("DQ-I06", "1 duplicate auction ids"));
+
+        assertThat(replays.requeueFrom("eu", T0)).isEqualTo(2);
+
+        assertThat(loads.pending("eu", 10))
+                .extracting(PendingSnapshot::id)
+                .containsExactly(loaded, quarantined, waiting);
+        assertThat(jdbc.sql("SELECT count(*) FROM ops.validation_result")
+                        .query(Long.class)
+                        .single())
+                .isZero();
+        assertThat(jdbc.sql("SELECT listings_read FROM ops.snapshot WHERE id = ?")
+                        .param(loaded)
+                        .query(Integer.class)
+                        .optional())
+                .isEmpty();
+        assertThat(loads.lastLoaded("eu", DRAENOR)).contains(T0.minusSeconds(3600));
     }
 
     @Test
