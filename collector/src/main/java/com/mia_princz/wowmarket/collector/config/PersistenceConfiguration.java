@@ -2,10 +2,12 @@ package com.mia_princz.wowmarket.collector.config;
 
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.CopyStagingWriter;
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcPipelineRunRepository;
+import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcPipelineStatus;
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcSnapshotLoadRegistry;
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.JdbcSnapshotRegistry;
 import com.mia_princz.wowmarket.collector.adapter.out.postgres.PartitionStagingRetention;
 import com.mia_princz.wowmarket.collector.application.port.out.PipelineRunRepositoryPort;
+import com.mia_princz.wowmarket.collector.application.port.out.PipelineStatusPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.StagingRetentionPort;
@@ -33,6 +35,11 @@ class PersistenceConfiguration {
     @Bean
     SnapshotLoadRegistryPort snapshotLoadRegistry(JdbcClient jdbc, PlatformTransactionManager transactions) {
         return new JdbcSnapshotLoadRegistry(jdbc, new TransactionTemplate(transactions));
+    }
+
+    @Bean
+    PipelineStatusPort pipelineStatusQueries(JdbcClient jdbc) {
+        return new JdbcPipelineStatus(jdbc);
     }
 
     @Bean
