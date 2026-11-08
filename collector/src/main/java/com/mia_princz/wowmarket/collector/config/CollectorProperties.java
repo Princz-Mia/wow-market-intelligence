@@ -38,11 +38,15 @@ public record CollectorProperties(
         }
     }
 
-    /** When snapshots are fetched and how many sources are fetched at the same time. */
+    /**
+     * When snapshots are fetched, how many sources are fetched at the same time, and how long without a completed run
+     * the health check tolerates before reporting the collector down.
+     */
     public record Capture(
             boolean enabled,
             @NotBlank String cron,
-            @Min(1) @Max(16) int concurrency) {}
+            @Min(1) @Max(16) int concurrency,
+            @NotNull Duration maxRunAge) {}
 
     /** Root folder of the raw zone, where every snapshot is kept as received. */
     public record Archive(@NotNull Path root) {}

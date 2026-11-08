@@ -20,6 +20,7 @@ class CollectorPropertiesTest {
                     "collector.capture.enabled=true",
                     "collector.capture.cron=0 10,40 * * * *",
                     "collector.capture.concurrency=4",
+                    "collector.capture.max-run-age=2h",
                     "collector.archive.root=data/archive",
                     "collector.load.batch-size=100",
                     "collector.retention.staged-days=3",
