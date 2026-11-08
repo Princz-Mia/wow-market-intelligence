@@ -1,0 +1,10 @@
+# Bundled fixture snapshots instead of the Blizzard API: no credentials needed.
+collector:
+  # The realms the fixtures in src/main/resources/offline cover.
+  connected-realms:
+    - 1403
+    - 1305
+  blizzard:
+    # Never used offline, but the settings are validated like any other.
+    client-id: offline
+    client-secret: offline

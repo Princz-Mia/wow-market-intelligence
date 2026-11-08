@@ -43,6 +43,14 @@ docker compose up -d --build --wait
 
 The collector captures once at startup and then at :10 and :40 every hour (UTC). Each snapshot is kept as a gzipped file in the `archive-data` volume and registered in `ops.snapshot`; each run is recorded in `ops.pipeline_run`. After capturing, a run loads the snapshots waiting in the archive: it streams each one through the ingestion checks in [data quality](docs/data-quality.md) and copies the listings that pass into `raw.auction_listing`, one partition per day. To run the stack without collecting, set `COLLECTOR_CAPTURE_ENABLED=false`. Running it on an always-on host, checking it, and copying its data are described in the [runbook](docs/runbook.md).
 
+To try it without a Battle.net client, run it offline. Leave the Battle.net values in `.env` empty and start the stack with:
+
+```sh
+COLLECTOR_PROFILE=offline docker compose up -d --build --wait
+```
+
+The collector then serves small bundled snapshots of the commodity market and two realms (`collector/src/main/resources/offline/`) instead of calling the API, dated to the current hour. Each run takes the next one, and `docker compose exec collector curl -s -X POST localhost:8080/api/runs` runs one straight away.
+
 PostgreSQL listens on `localhost:15432`. The `wow_market` database has one schema per layer: `raw` and `ops` belong to the `collector` role, `staging`, `core` and `marts` to the `transformer` role, and the `bi_reader` role can read only `marts`.
 
 Build and test:

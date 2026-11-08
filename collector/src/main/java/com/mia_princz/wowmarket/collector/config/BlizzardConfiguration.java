@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -62,7 +63,9 @@ class BlizzardConfiguration {
                         .build());
     }
 
+    /** The live API, unless the {@code offline} profile serves fixtures instead. */
     @Bean
+    @Profile("!offline")
     AuctionSourcePort auctionSource(
             HttpClient blizzardHttpClient,
             BlizzardTokenProvider tokens,

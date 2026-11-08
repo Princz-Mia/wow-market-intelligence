@@ -46,8 +46,11 @@ services:
     environment:
       COLLECTOR_DB_URL: jdbc:postgresql://postgres:5432/wow_market
       COLLECTOR_DB_PASSWORD: ${COLLECTOR_DB_PASSWORD:?set it in .env}
-      BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:?set it in .env}
-      BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:?set it in .env}
+      # Required unless COLLECTOR_PROFILE=offline; the collector refuses to start without them.
+      BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID:-}
+      BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET:-}
+      # offline serves bundled fixture snapshots instead of calling the Blizzard API.
+      SPRING_PROFILES_ACTIVE: ${COLLECTOR_PROFILE:-}
       # Set to false to run the stack without collecting, e.g. on a laptop next to the always-on host.
       COLLECTOR_CAPTURE_ENABLED: ${COLLECTOR_CAPTURE_ENABLED:-true}
     volumes:
