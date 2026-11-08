@@ -12,7 +12,6 @@ import com.mia_princz.wowmarket.collector.domain.pipeline.RunTrigger;
 import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 /**
@@ -27,21 +26,22 @@ public class RunPipelineService implements RunPipelineUseCase {
     private final CaptureSnapshotsUseCase capture;
     private final LoadSnapshotsUseCase load;
     private final ApplyRetentionUseCase retention;
-    private final ReentrantLock running = new ReentrantLock();
+    private final PipelineLock lock;
 
     public RunPipelineService(
-            CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load, ApplyRetentionUseCase retention) {
+            CaptureSnapshotsUseCase capture,
+            LoadSnapshotsUseCase load,
+            ApplyRetentionUseCase retention,
+            PipelineLock lock) {
         this.capture = capture;
         this.load = load;
         this.retention = retention;
+        this.lock = lock;
     }
 
     @Override
     public PipelineSummary run(RunTrigger trigger) {
-        if (!running.tryLock()) {
-            throw new PipelineAlreadyRunningException();
-        }
-        try {
+        return lock.exclusively(() -> {
             List<String> errors = new ArrayList<>();
             CaptureSummary captured = step("capture", () -> capture.capture(trigger), errors);
             LoadSummary loaded = step("load", load::loadPending, errors);
@@ -53,9 +53,7 @@ public class RunPipelineService implements RunPipelineUseCase {
             }
             RetentionSummary removed = step("retention", retention::apply, errors);
             return new PipelineSummary(captured, loaded, removed, errors);
-        } finally {
-            running.unlock();
-        }
+        });
     }
 
     private static <T> T step(String name, Supplier<T> work, List<String> errors) {

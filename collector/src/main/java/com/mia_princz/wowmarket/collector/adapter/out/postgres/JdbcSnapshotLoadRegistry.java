@@ -1,6 +1,7 @@
 package com.mia_princz.wowmarket.collector.adapter.out.postgres;
 
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
+import com.mia_princz.wowmarket.collector.application.port.out.SnapshotReplayPort;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import com.mia_princz.wowmarket.collector.domain.quality.ValidationContext.History;
 import com.mia_princz.wowmarket.collector.domain.quality.ValidationResult;
@@ -12,7 +13,7 @@ import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.support.TransactionTemplate;
 
-public class JdbcSnapshotLoadRegistry implements SnapshotLoadRegistryPort {
+public class JdbcSnapshotLoadRegistry implements SnapshotLoadRegistryPort, SnapshotReplayPort {
 
     static final Duration HISTORY_WINDOW = Duration.ofDays(7);
 
@@ -104,6 +105,23 @@ public class JdbcSnapshotLoadRegistry implements SnapshotLoadRegistryPort {
                         .update();
             }
         });
+    }
+
+    @Override
+    public int requeueFrom(String region, Instant from) {
+        Integer requeued = transaction.execute(status -> {
+            jdbc.sql("""
+                            DELETE FROM ops.validation_result
+                            WHERE snapshot_id IN (SELECT id FROM ops.snapshot
+                                                  WHERE region = ? AND last_modified >= ?
+                                                    AND status IN ('LOADED', 'QUARANTINED'))""").params(region, Timestamp.from(from)).update();
+            return jdbc.sql("""
+                            UPDATE ops.snapshot
+                            SET status = 'ARCHIVED', listings_read = NULL, listings_staged = NULL,
+                                distinct_items = NULL, processed_at = NULL
+                            WHERE region = ? AND last_modified >= ? AND status IN ('LOADED', 'QUARANTINED')""").params(region, Timestamp.from(from)).update();
+        });
+        return requeued == null ? 0 : requeued;
     }
 
     private static String outcome(ValidationResult result) {

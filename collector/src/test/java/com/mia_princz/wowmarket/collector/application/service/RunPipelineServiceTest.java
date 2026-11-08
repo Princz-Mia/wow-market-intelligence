@@ -41,7 +41,8 @@ class RunPipelineServiceTest {
             return CAPTURED;
         };
 
-        PipelineSummary summary = new RunPipelineService(capture, load, retention).run(RunTrigger.MANUAL);
+        PipelineSummary summary =
+                new RunPipelineService(capture, load, retention, new PipelineLock()).run(RunTrigger.MANUAL);
 
         assertThat(steps).containsExactly("capture MANUAL", "load", "retention");
         assertThat(summary).isEqualTo(new PipelineSummary(CAPTURED, LOADED, NOTHING_REMOVED, List.of()));
@@ -53,7 +54,8 @@ class RunPipelineServiceTest {
             throw new IllegalStateException("database unreachable");
         };
 
-        PipelineSummary summary = new RunPipelineService(capture, load, retention).run(RunTrigger.SCHEDULE);
+        PipelineSummary summary =
+                new RunPipelineService(capture, load, retention, new PipelineLock()).run(RunTrigger.SCHEDULE);
 
         assertThat(steps).containsExactly("load", "retention");
         assertThat(summary.capture()).isNull();
@@ -73,7 +75,7 @@ class RunPipelineServiceTest {
             }
             return CAPTURED;
         };
-        var service = new RunPipelineService(capture, load, retention);
+        var service = new RunPipelineService(capture, load, retention, new PipelineLock());
         Thread first = Thread.ofVirtual().start(() -> service.run(RunTrigger.SCHEDULE));
         assertThat(inCapture.await(5, TimeUnit.SECONDS)).isTrue();
 
