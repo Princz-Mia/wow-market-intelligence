@@ -22,6 +22,8 @@ class CollectorPropertiesTest {
                     "collector.capture.concurrency=4",
                     "collector.archive.root=data/archive",
                     "collector.load.batch-size=100",
+                    "collector.retention.staged-days=3",
+                    "collector.retention.archive-days=30",
                     "collector.blizzard.client-id=id",
                     "collector.blizzard.client-secret=very-secret",
                     "collector.blizzard.token-url=https://oauth.battle.net/token",

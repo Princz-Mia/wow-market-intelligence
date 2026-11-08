@@ -3,6 +3,7 @@ package com.mia_princz.wowmarket.collector.application.port.out;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
 import java.io.InputStream;
 import java.time.Instant;
+import java.time.LocalDate;
 
 /** The raw zone: every snapshot kept exactly as received, so the pipeline can be replayed from it. */
 public interface RawArchivePort {
@@ -23,6 +24,13 @@ public interface RawArchivePort {
      * @throws MissingSnapshotFileException if nothing is stored at {@code location}
      */
     InputStream open(String location);
+
+    /**
+     * Deletes every stored snapshot of the region whose event time falls on a UTC day before {@code firstKeptDay}.
+     *
+     * @return how many source-days were deleted
+     */
+    int deleteDaysBefore(String region, LocalDate firstKeptDay);
 
     /** The registry knows a snapshot whose file is not in the archive; retrying will not bring it back. */
     final class MissingSnapshotFileException extends RuntimeException {

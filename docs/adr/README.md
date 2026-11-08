@@ -10,5 +10,5 @@ Short records of decisions that shape the system. Each states the context, the d
 | [0004](0004-spring-scheduling-as-orchestrator.md) | Spring scheduling as the orchestrator | Accepted |
 | [0005](0005-jdbc-and-copy-without-jpa.md) | Plain JDBC and `COPY`, no JPA | Accepted |
 | [0006](0006-power-bi-import-on-marts.md) | Power BI in Import mode on `marts` only | Accepted |
-| [0007](0007-retention.md) | Retention limited by the API terms | Proposed |
+| [0007](0007-retention.md) | Retention limited by the API terms | Accepted |
 | [0008](0008-event-time-from-last-modified.md) | Event time is the snapshot's `Last-Modified` | Accepted |

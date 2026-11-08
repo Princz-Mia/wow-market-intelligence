@@ -15,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -98,6 +100,40 @@ class FileSystemRawArchiveTest {
         try (InputStream json = archive.open(stored.location())) {
             assertThat(new String(json.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(JSON);
         }
+    }
+
+    @Test
+    void deletesWholeDaysBeforeTheFirstKeptDayAndTidiesEmptyFolders() throws IOException {
+        var archive = new FileSystemRawArchive(root);
+        var commodities = new AuctionSource.RegionCommodities();
+        var draenor = new AuctionSource.ConnectedRealm(1403);
+        for (String time : List.of("2026-10-31T23:21:54Z", "2026-11-01T00:21:54Z", "2026-11-02T10:21:54Z")) {
+            archive.store("eu", commodities, Instant.parse(time), new ByteArrayInputStream(gzip(JSON)), true);
+            archive.store("eu", draenor, Instant.parse(time), new ByteArrayInputStream(gzip(JSON)), true);
+        }
+        archive.store(
+                "us", commodities, Instant.parse("2026-10-31T23:21:54Z"), new ByteArrayInputStream(gzip(JSON)), true);
+        Files.createDirectories(root.resolve("eu/commodities/notes"));
+
+        int deleted = archive.deleteDaysBefore("eu", LocalDate.parse("2026-11-02"));
+
+        assertThat(deleted).isEqualTo(4);
+        try (Stream<Path> files = Files.walk(root)) {
+            assertThat(files.filter(Files::isRegularFile)
+                            .map(path -> root.relativize(path).toString().replace('\\', '/')))
+                    .containsExactlyInAnyOrder(
+                            "eu/commodities/2026/11/02/10/20261102T102154Z.json.gz",
+                            "eu/connected-realm-1403/2026/11/02/10/20261102T102154Z.json.gz",
+                            "us/commodities/2026/10/31/23/20261031T232154Z.json.gz");
+        }
+        assertThat(root.resolve("eu/commodities/2026/10")).doesNotExist();
+        assertThat(root.resolve("eu/commodities/notes")).exists();
+    }
+
+    @Test
+    void deletesNothingInARegionWithoutSnapshots() {
+        assertThat(new FileSystemRawArchive(root).deleteDaysBefore("kr", LocalDate.parse("2026-11-02")))
+                .isZero();
     }
 
     @Test

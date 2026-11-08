@@ -1,5 +1,6 @@
 package com.mia_princz.wowmarket.collector.adapter.in.scheduling;
 
+import com.mia_princz.wowmarket.collector.application.port.in.ApplyRetentionUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase.CaptureAlreadyRunningException;
 import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
@@ -14,8 +15,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Starts a run on the configured cron, and once right after startup, so a restart or redeploy does not wait up to half
- * an hour for the next snapshot. A run captures first and then loads whatever waits in the archive: capturing is what
- * cannot be repeated later, so a slow or failing load never delays it.
+ * an hour for the next snapshot. A run captures first, then loads whatever waits in the archive, then removes what has
+ * aged out: capturing is what cannot be repeated later, so a slow or failing later step never delays it.
  */
 public class CaptureScheduler {
 
@@ -23,10 +24,13 @@ public class CaptureScheduler {
 
     private final CaptureSnapshotsUseCase capture;
     private final LoadSnapshotsUseCase load;
+    private final ApplyRetentionUseCase retention;
 
-    public CaptureScheduler(CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load) {
+    public CaptureScheduler(
+            CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load, ApplyRetentionUseCase retention) {
         this.capture = capture;
         this.load = load;
+        this.retention = retention;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -60,6 +64,11 @@ public class CaptureScheduler {
             LOG.warn("load skipped: the previous one is still running");
         } catch (RuntimeException e) {
             LOG.error("load failed", e);
+        }
+        try {
+            retention.apply();
+        } catch (RuntimeException e) {
+            LOG.error("retention failed", e);
         }
     }
 }

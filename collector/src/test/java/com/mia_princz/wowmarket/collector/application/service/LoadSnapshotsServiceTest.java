@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +63,11 @@ class LoadSnapshotsServiceTest {
                 throw new MissingSnapshotFileException(location, null);
             }
             return new ByteArrayInputStream(location.getBytes(StandardCharsets.UTF_8));
+        }
+
+        @Override
+        public int deleteDaysBefore(String region, LocalDate firstKeptDay) {
+            throw new UnsupportedOperationException("loading never deletes");
         }
     };
 

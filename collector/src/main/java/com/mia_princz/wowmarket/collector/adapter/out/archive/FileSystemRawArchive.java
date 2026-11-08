@@ -13,10 +13,16 @@ import java.nio.file.StandardCopyOption;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -79,6 +85,82 @@ public class FileSystemRawArchive implements RawArchivePort {
         } catch (IOException e) {
             throw new UncheckedIOException("could not open " + location, e);
         }
+    }
+
+    /** Walks {@code {region}/{source}/yyyy/MM/dd} and removes whole day folders, then month and year folders left empty. */
+    @Override
+    public int deleteDaysBefore(String region, LocalDate firstKeptDay) {
+        Path regionRoot = root.resolve(region);
+        if (!Files.isDirectory(regionRoot)) {
+            return 0;
+        }
+        int deleted = 0;
+        try {
+            for (Path source : children(regionRoot)) {
+                for (Path year : layoutChildren(source, 4)) {
+                    for (Path month : layoutChildren(year, 2)) {
+                        for (Path day : children(month)) {
+                            if (dayOf(year, month, day)
+                                    .filter(date -> date.isBefore(firstKeptDay))
+                                    .isPresent()) {
+                                deleteRecursively(day);
+                                deleted++;
+                            }
+                        }
+                        deleteIfEmpty(month);
+                    }
+                    deleteIfEmpty(year);
+                }
+            }
+            return deleted;
+        } catch (IOException e) {
+            throw new UncheckedIOException("could not apply retention to " + regionRoot, e);
+        }
+    }
+
+    private static List<Path> children(Path folder) throws IOException {
+        if (!Files.isDirectory(folder)) {
+            return List.of();
+        }
+        try (Stream<Path> entries = Files.list(folder)) {
+            return entries.filter(Files::isDirectory).toList();
+        }
+    }
+
+    /** Subfolders named by exactly {@code digits} digits, so folders outside the layout are never touched. */
+    private static List<Path> layoutChildren(Path folder, int digits) throws IOException {
+        return children(folder).stream()
+                .filter(child -> child.getFileName().toString().matches("\\d{" + digits + "}"))
+                .toList();
+    }
+
+    /** The date a {@code yyyy/MM/dd} folder stands for; empty for any folder that does not follow the layout. */
+    private static Optional<LocalDate> dayOf(Path year, Path month, Path day) {
+        try {
+            return Optional.of(LocalDate.of(
+                    Integer.parseInt(year.getFileName().toString()),
+                    Integer.parseInt(month.getFileName().toString()),
+                    Integer.parseInt(day.getFileName().toString())));
+        } catch (NumberFormatException | DateTimeException e) {
+            return Optional.empty();
+        }
+    }
+
+    private static void deleteRecursively(Path folder) throws IOException {
+        try (Stream<Path> tree = Files.walk(folder)) {
+            for (Path path : tree.sorted(Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        }
+    }
+
+    private static void deleteIfEmpty(Path folder) throws IOException {
+        try (Stream<Path> entries = Files.list(folder)) {
+            if (entries.findAny().isPresent()) {
+                return;
+            }
+        }
+        Files.delete(folder);
     }
 
     static String location(String region, AuctionSource source, Instant lastModified) {

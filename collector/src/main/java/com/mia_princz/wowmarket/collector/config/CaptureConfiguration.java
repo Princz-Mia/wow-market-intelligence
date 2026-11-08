@@ -1,6 +1,7 @@
 package com.mia_princz.wowmarket.collector.config;
 
 import com.mia_princz.wowmarket.collector.adapter.in.scheduling.CaptureScheduler;
+import com.mia_princz.wowmarket.collector.application.port.in.ApplyRetentionUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.CaptureSnapshotsUseCase;
 import com.mia_princz.wowmarket.collector.application.port.in.LoadSnapshotsUseCase;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
@@ -9,7 +10,9 @@ import com.mia_princz.wowmarket.collector.application.port.out.PipelineRunReposi
 import com.mia_princz.wowmarket.collector.application.port.out.RawArchivePort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotLoadRegistryPort;
 import com.mia_princz.wowmarket.collector.application.port.out.SnapshotRegistryPort;
+import com.mia_princz.wowmarket.collector.application.port.out.StagingRetentionPort;
 import com.mia_princz.wowmarket.collector.application.port.out.StagingWriterPort;
+import com.mia_princz.wowmarket.collector.application.service.ApplyRetentionService;
 import com.mia_princz.wowmarket.collector.application.service.CaptureSnapshotsService;
 import com.mia_princz.wowmarket.collector.application.service.LoadSnapshotsService;
 import com.mia_princz.wowmarket.collector.domain.market.AuctionSource;
@@ -65,8 +68,21 @@ class CaptureConfiguration {
     }
 
     @Bean
+    ApplyRetentionUseCase applyRetention(
+            CollectorProperties properties, StagingRetentionPort staging, RawArchivePort archive, Clock clock) {
+        return new ApplyRetentionService(
+                properties.region(),
+                properties.retention().stagedDays(),
+                properties.retention().archiveDays(),
+                staging,
+                archive,
+                clock);
+    }
+
+    @Bean
     @ConditionalOnProperty(name = "collector.capture.enabled", havingValue = "true")
-    CaptureScheduler captureScheduler(CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load) {
-        return new CaptureScheduler(capture, load);
+    CaptureScheduler captureScheduler(
+            CaptureSnapshotsUseCase capture, LoadSnapshotsUseCase load, ApplyRetentionUseCase retention) {
+        return new CaptureScheduler(capture, load, retention);
     }
 }
