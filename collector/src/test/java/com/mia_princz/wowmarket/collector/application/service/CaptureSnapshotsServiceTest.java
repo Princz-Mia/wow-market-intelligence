@@ -56,16 +56,25 @@ class CaptureSnapshotsServiceTest {
         }
     };
 
-    private final RawArchivePort archive = (region, source, lastModified, body, gzipped) -> {
-        try {
-            body.readAllBytes();
-        } catch (IOException e) {
-            throw new AssertionError(e);
+    private final RawArchivePort archive = new RawArchivePort() {
+        @Override
+        public ArchivedSnapshot store(
+                String region, AuctionSource source, Instant lastModified, InputStream body, boolean gzipped) {
+            try {
+                body.readAllBytes();
+            } catch (IOException e) {
+                throw new AssertionError(e);
+            }
+            synchronized (archived) {
+                archived.add(source.key() + "@" + lastModified);
+            }
+            return new ArchivedSnapshot(source.key() + ".json.gz", 10, "0".repeat(64));
         }
-        synchronized (archived) {
-            archived.add(source.key() + "@" + lastModified);
+
+        @Override
+        public InputStream open(String location) {
+            throw new UnsupportedOperationException("capture never reads the archive");
         }
-        return new RawArchivePort.ArchivedSnapshot(source.key() + ".json.gz", 10, "0".repeat(64));
     };
 
     private final PipelineRunRepositoryPort runs = new PipelineRunRepositoryPort() {

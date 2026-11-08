@@ -1,8 +1,10 @@
 package com.mia_princz.wowmarket.collector.config;
 
 import com.mia_princz.wowmarket.collector.adapter.out.blizzard.BlizzardAuctionClient;
+import com.mia_princz.wowmarket.collector.adapter.out.blizzard.BlizzardAuctionPayloadParser;
 import com.mia_princz.wowmarket.collector.adapter.out.blizzard.BlizzardTokenProvider;
 import com.mia_princz.wowmarket.collector.adapter.out.blizzard.ResilientAuctionSource;
+import com.mia_princz.wowmarket.collector.application.port.out.AuctionPayloadParserPort;
 import com.mia_princz.wowmarket.collector.application.port.out.AuctionSourcePort;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
@@ -41,6 +43,11 @@ class BlizzardConfiguration {
                 blizzard.clientId(),
                 blizzard.clientSecret(),
                 blizzard.requestTimeout());
+    }
+
+    @Bean
+    AuctionPayloadParserPort auctionPayloadParser(JsonMapper json) {
+        return new BlizzardAuctionPayloadParser(json);
     }
 
     /** One limiter for every Blizzard call the collector makes. */

@@ -17,6 +17,13 @@ public interface RawArchivePort {
             String region, AuctionSource source, Instant lastModified, InputStream body, boolean gzipped);
 
     /**
+     * Opens a stored snapshot for reading, already decompressed. The caller closes the stream.
+     *
+     * @param location as returned by {@link #store}
+     */
+    InputStream open(String location);
+
+    /**
      * Where a snapshot was stored.
      *
      * @param location path relative to the archive root

@@ -88,6 +88,24 @@ class FileSystemRawArchiveTest {
         }
     }
 
+    @Test
+    void readsAStoredSnapshotBackDecompressed() throws IOException {
+        var archive = new FileSystemRawArchive(root);
+        ArchivedSnapshot stored = archive.store(
+                "eu", new AuctionSource.RegionCommodities(), EVENT_TIME, new ByteArrayInputStream(gzip(JSON)), true);
+
+        try (InputStream json = archive.open(stored.location())) {
+            assertThat(new String(json.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(JSON);
+        }
+    }
+
+    @Test
+    void refusesToOpenAFileOutsideTheArchive() {
+        var archive = new FileSystemRawArchive(root.resolve("archive"));
+
+        assertThatThrownBy(() -> archive.open("../secrets.json.gz")).isInstanceOf(IllegalArgumentException.class);
+    }
+
     private static byte[] gzip(String text) throws IOException {
         var bytes = new ByteArrayOutputStream();
         try (var out = new GZIPOutputStream(bytes)) {

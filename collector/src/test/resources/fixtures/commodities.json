@@ -1,0 +1,8 @@
+{
+  "_links": {"self": {"href": "https://eu.api.blizzard.com/data/wow/auctions/commodities?namespace=dynamic-eu"}},
+  "auctions": [
+    {"id": 2000001, "item": {"id": 190396}, "quantity": 200, "unit_price": 1250000, "time_left": "SHORT"},
+    {"id": 2000002, "item": {"id": 190396}, "quantity": 35, "unit_price": 1260000, "time_left": "LONG"},
+    {"id": 2000003, "item": {"id": 191383}, "quantity": 1, "unit_price": 98000000, "time_left": "VERY_LONG"}
+  ]
+}
