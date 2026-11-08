@@ -25,6 +25,7 @@ public record CollectorProperties(
         @Valid @NotNull Capture capture,
         @Valid @NotNull Archive archive,
         @Valid @NotNull Load load,
+        @Valid @NotNull Retention retention,
         @Valid @NotNull Blizzard blizzard) {
 
     public CollectorProperties {
@@ -48,6 +49,14 @@ public record CollectorProperties(
 
     /** How many archived snapshots one load step takes on, so a backlog is worked off over several runs. */
     public record Load(@Min(1) @Max(1000) int batchSize) {}
+
+    /**
+     * How many full UTC days of staged listings and of archived files to keep besides today. The Blizzard terms ask
+     * that API data is not kept beyond 30 days.
+     */
+    public record Retention(
+            @Min(1) @Max(30) int stagedDays,
+            @Min(1) @Max(30) int archiveDays) {}
 
     /** Battle.net API client and the limits we keep below the Blizzard quota. */
     public record Blizzard(

@@ -39,6 +39,10 @@ collector:
     concurrency: 4
   archive:
     root: ${COLLECTOR_ARCHIVE_ROOT:data/archive}
+  retention:
+    # Staging keeps enough consecutive snapshots for the listing lifecycle; older days replay from the archive.
+    staged-days: 3
+    archive-days: 30
   load:
     # A snapshot loads in a second or two; 100 per run clears a day of backlog in a few runs.
     batch-size: 100
