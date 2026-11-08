@@ -38,7 +38,7 @@ docker compose ps                                     # both services "healthy"
 docker compose logs --since 2h collector | grep "capture run="
 ```
 
-Each run logs one line such as `capture run=12 trigger=SCHEDULE status=SUCCEEDED new=9 unchanged=0 failed=0`. About once an hour a run reports `new=9`, and the run in between reports `unchanged=9`.
+Each run logs one line such as `capture run=12 trigger=SCHEDULE status=SUCCEEDED new=9 unchanged=0 failed=0`, then one `load snapshot=…` line per snapshot it loaded and a `load loaded=9 quarantined=0 failed=0` total. About once an hour a run reports `new=9`, and the run in between reports `unchanged=9`.
 
 The run log and snapshot registry in the database:
 
@@ -51,7 +51,19 @@ docker compose exec postgres psql -U postgres -d wow_market -c \
 
 `error_summary` on a `PARTIAL` or `FAILED` run names the failing sources.
 
-Disk usage (the archive grows by about 250 MB a day):
+The same from the collector's operator API, which listens only inside the container:
+
+```bash
+docker compose exec collector curl -s localhost:8080/actuator/health          # DOWN after 2 hours without a completed run
+docker compose exec collector curl -s localhost:8080/api/runs/latest
+docker compose exec collector curl -s "localhost:8080/api/snapshots?limit=9"   # status, counts and any check that did not pass
+docker compose exec collector curl -s "localhost:8080/api/snapshots?source=connected-realm-1403"
+docker compose exec collector curl -s -X POST localhost:8080/api/runs          # run capture, load and retention now
+```
+
+A run answers 409 while another one is still going.
+
+Disk usage: the archive grows by about 250 MB a day and staged listings by about 1.9 GB a day. Retention keeps 3 full days of staged listings and 30 of archive besides today, so disk use levels off after a month:
 
 ```bash
 docker system df -v | grep -E "archive-data|postgres-data"
