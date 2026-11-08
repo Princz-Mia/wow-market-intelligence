@@ -1,0 +1,54 @@
+{
+  "_links": {
+    "self": {
+      "href": "offline fixture"
+    }
+  },
+  "auctions": [
+    {
+      "id": 9000002,
+      "item": {
+        "id": 190396
+      },
+      "quantity": 35,
+      "unit_price": 1260000,
+      "time_left": "MEDIUM"
+    },
+    {
+      "id": 9000003,
+      "item": {
+        "id": 190396
+      },
+      "quantity": 320,
+      "unit_price": 1300000,
+      "time_left": "LONG"
+    },
+    {
+      "id": 9000007,
+      "item": {
+        "id": 190396
+      },
+      "quantity": 80,
+      "unit_price": 1240000,
+      "time_left": "VERY_LONG"
+    },
+    {
+      "id": 9000004,
+      "item": {
+        "id": 191383
+      },
+      "quantity": 4,
+      "unit_price": 98000000,
+      "time_left": "LONG"
+    },
+    {
+      "id": 9000008,
+      "item": {
+        "id": 2589
+      },
+      "quantity": 200,
+      "unit_price": 6000,
+      "time_left": "VERY_LONG"
+    }
+  ]
+}
